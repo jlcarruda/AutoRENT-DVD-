@@ -39,7 +39,7 @@ ID_PAINELCL = 115
 class JanelaPrincipal(wx.Frame):
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self,parent,wx.ID_ANY,title=title, size=(800,600),
-             style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
+             style= wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN | wx.NO_FULL_REPAINT_ON_RESIZE)
         # -- PAINEL ---------------------------------------
         self.Painel = wx.Panel(self)
 
@@ -118,9 +118,11 @@ class JanelaPrincipal(wx.Frame):
     def OnDelFilmes(self, evento):
         return
 
+    def OnButtomCadastroFilme(self,evento):
+        janelaCadastroFilme.Show()
+        janelaCadastroFilme.Center()
+
     def OnCadastrarCliente(self,evento):
-        return
-    def OnCadastrarFilmes(self,evento):
         return
     def OnRemoverCliente(self,evento):
         return
@@ -132,33 +134,80 @@ class JanelaPrincipal(wx.Frame):
         try:
             loja.procurarFilmes(self.Titulo,self.Codigo, self.Categoria)
         except:
-            wx.MessageBox('Erro!', 'Info', wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox('Erro!', 'Info', wx.OK | wx.ICON_ERROR)
+
     def OnMostrarClientes(self, evento):
         # Basicamente vai chamar o Procurar Cliente e mostrar na tela, loja.ProcurarCliente(nomeCliente, CPF)
+        self.NomeClienteStr = janela.NomeCliente.GetStringSelection()
+        self.cpfClienteStr = janela.cpfCliente.GetValue()
         try:
-            loja.procurarClientes(self.NomeCliente, self.cpfCliente)
+            loja.procurarClientes(self.NomeClienteStr, self.cpfClienteStr)
         except:
-            wx.MessageBox('Erro! Falta de Dados para Busca!', 'Info', wx.OK | wx.ICON_INFORMATION)
+            wx.MessageBox('Erro! Falta de Dados para Busca!', 'Info', wx.OK | wx.ICON_ERROR)
 
-'''
-class JanelaCarrinho(wx.Frame):
-    def __init__(self,parent,id,title):
-        wx.Frame.__init__(self,parent,wx.ID_ANY, title=title,size=(500,300),
-        style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
-        self.PainelCarrinho = wx.Panel(self)
-'''
 
+
+
+
+# -- JANELA DE CADASTRO DE FILMES --------------------------------------------------------------------------------------------
+
+
+
+class JanelaCadastroFilme(wx.Frame):                      # Classe da janela de Cadastro de Filmes
+    ID_BUTAOCADASTRO=444
+    def __init__(self,parent,id):
+        wx.Frame.__init__(self,parent,wx.ID_ANY,title="Cadastro de Filmes",size=(400,200),
+        style=wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN | wx.NO_FULL_REPAINT_ON_RESIZE )
+
+        self.Painel = wx.Panel(self)
+
+        wx.StaticBox(self.Painel,-1,'Dados de Cadastro',(10,10),(360,150))
+
+        # -- TITULO ----------------------------------
+        wx.StaticText(self.Painel,-1,'Titulo: ',(20,40))
+        self.Titulo=wx.TextCtrl(self.Painel,345,'',(70,37),(280,-1))
+
+
+        # -- CODIGO ----------------------------------
+        wx.StaticText(self.Painel,-1,'Codigo: ',(20,70))
+        self.Codigo=wx.TextCtrl(self.Painel, 456,'',(70,67),(150,-1))
+
+        # -- QUANTIDADE ------------------------------
+        wx.StaticText(self.Painel,-1,'Quantidade: ',(20,100))
+        self.Quantidade=wx.SpinCtrl(self.Painel,-1,'',min=1,max=99,pos=(90,97),size=(60,-1))
+
+        # -- MIDIA -----------------------------------
+        wx.StaticText(self.Painel,-1,'Midia: ',(20,130))
+        self.Midia=wx.TextCtrl(self.Painel,-1,'',(70,127),(100,-1))
+
+        wx.Button(self.Painel, id=self.ID_BUTAOCADASTRO, label="Cadastrar", pos=(250,127), size=(100,-1)) # CRIAÇAO NO BOTAO
+
+        self.Bind(wx.EVT_BUTTON,self.OnCadastro,id=self.ID_BUTAOCADASTRO)
+
+    def OnCadastro(self,evento):
+        self.TituloStr = self.Titulo.GetValue()
+        self.MidiaStr = self.Midia.GetValue()
+        self.CodigoStr = self.Codigo.GetValue()
+
+        loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
+        print self.TituloStr
+        print self.MidiaStr
+        print self.CodigoStr
+        print self.Quantidade.GetValue()
+        self.Titulo.Clear()
+        self.Codigo.Clear()
+        self.Midia.Clear()
 
 if __name__ == '__main__':
     app = wx.App()
     loja = loja()
     carrinho=carrinho()
-    #JanelaCarrinho = JanelaCarrinho(parent = JanelaPrincipal,id = ID_CARRINHO,title="Carrinho")
     janela = JanelaPrincipal(parent = None, id=ID_JANELA,title="AutoRENT DVDs")
+    janelaCadastroFilme = JanelaCadastroFilme(parent = janela, id = 99999999)
     janela.Center()
     janela.Show()
+    janelaCadastroFilme.Show()
     app.MainLoop()
-
 
 
 
