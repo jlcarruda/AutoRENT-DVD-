@@ -34,7 +34,8 @@ ID_TITULO = 112
 ID_CODIGO = 113
 ID_CATEGORIA = 114
 ID_PAINELCL = 115
-
+ID_BUTAOPROCURAFILME = 116
+ID_BUTAOCADASTRO=444
 
 class JanelaPrincipal(wx.Frame):
     def __init__(self, parent, id, title):
@@ -92,6 +93,9 @@ class JanelaPrincipal(wx.Frame):
         wx.StaticText(self.Painel,5,'Categoria: ',(20,145))
         wx.StaticText(self.Painel,6,'Codigo: ',(20,175))
 
+        wx.Button(self.Painel, id=ID_BUTAOPROCURAFILME, label="Procurar Filme", pos=(60,152), size=(140,-1))
+        wx.Button(self.Painel, id=ID_BUTAOCADASTRO, label="Cadastrar Filme", pos=(60,172), size=(140,-1))
+
         # -- ComboBox, SpinCtrl e TxtCtrl -------------------
         self.NomeCliente =wx.TextCtrl(self.Painel,ID_NOMECLIENTE,'',(90,27),(200,-1))
         self.cpfCliente = wx.TextCtrl(self.Painel, ID_CPFCLIENTE,'',(90,57),(100,-1))
@@ -121,6 +125,7 @@ class JanelaPrincipal(wx.Frame):
     def OnButtomCadastroFilme(self,evento):
         janelaCadastroFilme.Show()
         janelaCadastroFilme.Center()
+        janelaCadastroFilme.Destroy()
 
     def OnCadastrarCliente(self,evento):
         return
@@ -188,15 +193,14 @@ class JanelaCadastroFilme(wx.Frame):                      # Classe da janela de 
         self.TituloStr = self.Titulo.GetValue()
         self.MidiaStr = self.Midia.GetValue()
         self.CodigoStr = self.Codigo.GetValue()
+        try:
+            loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
+            self.Titulo.Clear()
+            self.Codigo.Clear()
+            self.Midia.Clear()
 
-        loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
-        print self.TituloStr
-        print self.MidiaStr
-        print self.CodigoStr
-        print self.Quantidade.GetValue()
-        self.Titulo.Clear()
-        self.Codigo.Clear()
-        self.Midia.Clear()
+        except:
+            wx.MessageBox('Erro! Não foi possivel cadastrar o Filme','Erro',wx.OK|wx.ICON_ERROR)
 
 if __name__ == '__main__':
     app = wx.App()
@@ -206,7 +210,6 @@ if __name__ == '__main__':
     janelaCadastroFilme = JanelaCadastroFilme(parent = janela, id = 99999999)
     janela.Center()
     janela.Show()
-    janelaCadastroFilme.Show()
     app.MainLoop()
 
 
