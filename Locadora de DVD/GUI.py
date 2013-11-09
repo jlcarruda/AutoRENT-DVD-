@@ -10,6 +10,12 @@
 # Licence:     *************
 #-------------------------------------------------------------------------------
 
+# Metas
+# - Decidir o que fazer com a ideia de Autenticação
+# - Adicionar os botões de Procura/Cadastro Cliente
+# - Exibir os dados de Procura
+
+
 import wx
 from main1 import *
 
@@ -35,7 +41,8 @@ ID_CODIGO = 113
 ID_CATEGORIA = 114
 ID_PAINELCL = 115
 ID_BUTAOPROCURAFILME = 116
-ID_BUTAOCADASTRO=444
+ID_BUTAOCADASTROFILME=444
+ID_MIDIACOMBO = 117
 
 class JanelaPrincipal(wx.Frame):
     def __init__(self, parent, id, title):
@@ -74,7 +81,7 @@ class JanelaPrincipal(wx.Frame):
         menuSup.Append(CadastroeRemocao, "Cadastro e Remocao")
         self.SetMenuBar(menuSup)
 
-        # -- EVENT HANDLERS -----------------------------------
+        # -- EVENT HANDLERS MENU BAR -----------------------------------
         self.Bind(wx.EVT_MENU, self.OnExit, id=ID_EXIT)
         self.Bind(wx.EVT_MENU, self.OnAddFilmes, id=ID_ADDM)
         self.Bind(wx.EVT_MENU, self.OnDelFilmes, id=ID_DELM)
@@ -83,18 +90,19 @@ class JanelaPrincipal(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnCadastrarCliente, id=ID_CADASTROC)
 
         # -- STATIC BOX CLIENTES ------------------------------------
-        wx.StaticBox(self.Painel,-1,'Dados do Cliente',(10,10),(390,80))
+        wx.StaticBox(self.Painel,-1,'Dados do Cliente',(10,10),(450,80))
         wx.StaticText(self.Painel,ID_StaticNome,'Nome: ',(20,30))
         wx.StaticText(self.Painel,2,'CPF: ', (20,60))
 
         # -- STATIC BOX FILMES --------------------------------------
-        wx.StaticBox(self.Painel,-1,'Dados do Filme',(10,95),(390,110))
+        wx.StaticBox(self.Painel,-1,'Dados do Filme',(10,95),(450,150))
         wx.StaticText(self.Painel,4,'Titulo: ',(20,115))
         wx.StaticText(self.Painel,5,'Categoria: ',(20,145))
         wx.StaticText(self.Painel,6,'Codigo: ',(20,175))
+        wx.StaticText(self.Painel,7,'Midia: ',(20,205))
 
-        wx.Button(self.Painel, id=ID_BUTAOPROCURAFILME, label="Procurar Filme", pos=(60,152), size=(140,-1))
-        wx.Button(self.Painel, id=ID_BUTAOCADASTRO, label="Cadastrar Filme", pos=(60,172), size=(140,-1))
+        wx.Button(self.Painel, id=ID_BUTAOPROCURAFILME, label="Procurar Filme", pos=(300,122), size=(140,-1))
+        wx.Button(self.Painel, id=ID_BUTAOCADASTROFILME, label="Cadastrar Filme", pos=(300,162), size=(140,-1))
 
         # -- ComboBox, SpinCtrl e TxtCtrl -------------------
         self.NomeCliente =wx.TextCtrl(self.Painel,ID_NOMECLIENTE,'',(90,27),(200,-1))
@@ -104,15 +112,22 @@ class JanelaPrincipal(wx.Frame):
         self.Categoria = wx.ComboBox(self.Painel,ID_CATEGORIA,'',(90,142),(100,-1),choices = ['Lancamento','Catalogo','Super Lancamento'],
                         style=wx.CB_READONLY|wx.CB_SORT)
         self.Codigo = wx.TextCtrl(self.Painel,ID_CODIGO,'',(90,172),(100,-1))
+        self.Midia = wx.ComboBox(self.Painel,ID_MIDIACOMBO,'',(90,202),(100,-1),choices=['DVD','Blueray','Games'],
+                                 style=wx.CB_READONLY|wx.CB_SORT)
 
+        self.Quantidade = wx.TextCtrl(self.Painel,1234,'',(90,230),(100,-1))
         # -- ListCtrl PARA RESULTADOS DE BUSCA ---------------
-        wx.StaticBox(self.Painel,-1,'Resultado de Busca',(10,230),(380,230), style=wx.LC_REPORT|wx.SUNKEN_BORDER)
-        self.ResultadoMovie=wx.ListCtrl(self.Painel,-1,(20,250),(360,200))
+        wx.StaticBox(self.Painel,-1,'Resultado de Busca',(10,250),(380,230), style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        self.ResultadoMovie=wx.ListCtrl(self.Painel,-1,(20,270),(360,200))
         self.ResultadoMovie.InsertColumn(7,'Código')
         self.ResultadoMovie.InsertColumn(8, 'Titulo')
         self.ResultadoMovie.InsertColumn(9, 'Categoria')
         self.ResultadoMovie.InsertColumn(10, 'Estoque')
         self.ResultadoMovie.Show(True)
+
+        # -- EVENT HANDLERS BUTTONS ----------------------
+
+        self.Bind(wx.EVT_BUTTON, self.OnButtomCadastroFilme, id=ID_BUTAOCADASTROFILME)
 
     def OnExit(self, evento):
         self.Close(True)
@@ -123,10 +138,17 @@ class JanelaPrincipal(wx.Frame):
         return
 
     def OnButtomCadastroFilme(self,evento):
-        janelaCadastroFilme.Show()
-        janelaCadastroFilme.Center()
-        janelaCadastroFilme.Destroy()
-
+        self.TituloStr = str(self.Titulo.GetValue())
+        self.MidiaStr = str(self.Midia.GetValue())
+        self.CodigoStr = str(self.Codigo.GetValue())
+        try:
+            loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
+            self.Titulo.Clear()
+            self.Codigo.Clear()
+            self.Midia.Clear()
+        except:
+            wx.MessageBox('Erro! Nao foi possivel continuar o cadastro!', 'Error', wx.OK | wx.ICON_ERROR)
+       
     def OnCadastrarCliente(self,evento):
         return
     def OnRemoverCliente(self,evento):
@@ -149,58 +171,25 @@ class JanelaPrincipal(wx.Frame):
             loja.procurarClientes(self.NomeClienteStr, self.cpfClienteStr)
         except:
             wx.MessageBox('Erro! Falta de Dados para Busca!', 'Info', wx.OK | wx.ICON_ERROR)
-
-
-
-
-
-# -- JANELA DE CADASTRO DE FILMES --------------------------------------------------------------------------------------------
-
-
-
-class JanelaCadastroFilme(wx.Frame):                      # Classe da janela de Cadastro de Filmes
-    ID_BUTAOCADASTRO=444
-    def __init__(self,parent,id):
-        wx.Frame.__init__(self,parent,wx.ID_ANY,title="Cadastro de Filmes",size=(400,200),
-        style=wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN | wx.NO_FULL_REPAINT_ON_RESIZE )
-
-        self.Painel = wx.Panel(self)
-
-        wx.StaticBox(self.Painel,-1,'Dados de Cadastro',(10,10),(360,150))
-
-        # -- TITULO ----------------------------------
-        wx.StaticText(self.Painel,-1,'Titulo: ',(20,40))
-        self.Titulo=wx.TextCtrl(self.Painel,345,'',(70,37),(280,-1))
-
-
-        # -- CODIGO ----------------------------------
-        wx.StaticText(self.Painel,-1,'Codigo: ',(20,70))
-        self.Codigo=wx.TextCtrl(self.Painel, 456,'',(70,67),(150,-1))
-
-        # -- QUANTIDADE ------------------------------
-        wx.StaticText(self.Painel,-1,'Quantidade: ',(20,100))
-        self.Quantidade=wx.SpinCtrl(self.Painel,-1,'',min=1,max=99,pos=(90,97),size=(60,-1))
-
-        # -- MIDIA -----------------------------------
-        wx.StaticText(self.Painel,-1,'Midia: ',(20,130))
-        self.Midia=wx.TextCtrl(self.Painel,-1,'',(70,127),(100,-1))
-
-        wx.Button(self.Painel, id=self.ID_BUTAOCADASTRO, label="Cadastrar", pos=(250,127), size=(100,-1)) # CRIAÇAO NO BOTAO
-
-        self.Bind(wx.EVT_BUTTON,self.OnCadastro,id=self.ID_BUTAOCADASTRO)
-
-    def OnCadastro(self,evento):
-        self.TituloStr = self.Titulo.GetValue()
-        self.MidiaStr = self.Midia.GetValue()
-        self.CodigoStr = self.Codigo.GetValue()
-        try:
-            loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
-            self.Titulo.Clear()
-            self.Codigo.Clear()
-            self.Midia.Clear()
-
-        except:
-            wx.MessageBox('Erro! Não foi possivel cadastrar o Filme','Erro',wx.OK|wx.ICON_ERROR)
+'''
+class __JanelaDeAutenticacao(wx.Frame):
+    self.AdminScreen=True
+    self.OnAuthentication=True
+    def __init__(self,id):
+        wx.Frame.__init__(self,parent,wx.ID_ANY,title="AutoRENT DVD Authentication",size(100,100),
+                          style=wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN )
+        self.Painel=wx.Panel(self)
+        while self.OnAuthentication:
+            if self.AdminScreen:
+                '''
+                
+                
+                
+    def TelaAdmin():    
+        wx.StaticText(self.Painel,-1,'Login: ',(20,60))
+        wx.StaticText(self.Painel,-1,'Password: ',(20,80))
+        wx.StaticText(self.Painel,-1,'Admin Authentication'(20,40))
+        
 
 if __name__ == '__main__':
     app = wx.App()
