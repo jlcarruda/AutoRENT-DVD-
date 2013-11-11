@@ -43,6 +43,10 @@ ID_PAINELCL = 115
 ID_BUTAOPROCURAFILME = 116
 ID_BUTAOCADASTROFILME=444
 ID_MIDIACOMBO = 117
+ID_PASS=435
+
+AdminLogged=False
+AdminPass = 'jrrtolkien'
 
 class JanelaPrincipal(wx.Frame):
     def __init__(self, parent, id, title):
@@ -115,15 +119,17 @@ class JanelaPrincipal(wx.Frame):
         self.Midia = wx.ComboBox(self.Painel,ID_MIDIACOMBO,'',(90,202),(100,-1),choices=['DVD','Blueray','Games'],
                                  style=wx.CB_READONLY|wx.CB_SORT)
 
-        self.Quantidade = wx.TextCtrl(self.Painel,1234,'',(90,230),(100,-1))
+        #self.Quantidade = wx.TextCtrl(self.Painel,1234,'',(90,230),(100,-1))
+        
         # -- ListCtrl PARA RESULTADOS DE BUSCA ---------------
-        wx.StaticBox(self.Painel,-1,'Resultado de Busca',(10,250),(380,230), style=wx.LC_REPORT|wx.SUNKEN_BORDER)
-        self.ResultadoMovie=wx.ListCtrl(self.Painel,-1,(20,270),(360,200))
-        self.ResultadoMovie.InsertColumn(7,'Código')
+        wx.StaticBox(self.Painel,-1,'Resultado de Busca',(10,250),(380,230))
+        self.ResultadoMovie=wx.ListCtrl(self.Painel,-1,(20,270),(360,200),style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        self.ResultadoMovie.Show(True)
+        self.ResultadoMovie.InsertColumn(7,'Codigo')
         self.ResultadoMovie.InsertColumn(8, 'Titulo')
         self.ResultadoMovie.InsertColumn(9, 'Categoria')
         self.ResultadoMovie.InsertColumn(10, 'Estoque')
-        self.ResultadoMovie.Show(True)
+        
 
         # -- EVENT HANDLERS BUTTONS ----------------------
 
@@ -138,16 +144,21 @@ class JanelaPrincipal(wx.Frame):
         return
 
     def OnButtomCadastroFilme(self,evento):
-        self.TituloStr = str(self.Titulo.GetValue())
-        self.MidiaStr = str(self.Midia.GetValue())
-        self.CodigoStr = str(self.Codigo.GetValue())
-        try:
-            loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
-            self.Titulo.Clear()
-            self.Codigo.Clear()
-            self.Midia.Clear()
-        except:
-            wx.MessageBox('Erro! Nao foi possivel continuar o cadastro!', 'Error', wx.OK | wx.ICON_ERROR)
+        if AdminLogged==True:
+            self.TituloStr = str(self.Titulo.GetValue())
+            self.MidiaStr = str(self.Midia.GetValue())
+            self.CodigoStr = str(self.Codigo.GetValue())
+            try:
+                loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
+                self.Titulo.Clear()
+                self.Codigo.Clear()
+                self.Midia.Clear()
+            except:
+                wx.MessageBox('Erro! Nao foi possivel continuar o cadastro!', 'Error', wx.OK | wx.ICON_ERROR)
+        if AdminLogged==False:
+            janelaAuth=JanelaDeAutenticacao(janela)
+            janelaAuth.Show()
+            janelaAuth.Center()
        
     def OnCadastrarCliente(self,evento):
         return
@@ -171,32 +182,39 @@ class JanelaPrincipal(wx.Frame):
             loja.procurarClientes(self.NomeClienteStr, self.cpfClienteStr)
         except:
             wx.MessageBox('Erro! Falta de Dados para Busca!', 'Info', wx.OK | wx.ICON_ERROR)
-'''
-class __JanelaDeAutenticacao(wx.Frame):
-    self.AdminScreen=True
-    self.OnAuthentication=True
-    def __init__(self,id):
-        wx.Frame.__init__(self,parent,wx.ID_ANY,title="AutoRENT DVD Authentication",size(100,100),
-                          style=wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN )
-        self.Painel=wx.Panel(self)
-        while self.OnAuthentication:
-            if self.AdminScreen:
-                '''
-                
-                
-                
-    def TelaAdmin():    
-        wx.StaticText(self.Painel,-1,'Login: ',(20,60))
-        wx.StaticText(self.Painel,-1,'Password: ',(20,80))
-        wx.StaticText(self.Painel,-1,'Admin Authentication'(20,40))
-        
 
+class JanelaDeAutenticacao(wx.Frame):
+    ErrorCount = 0
+    def __init__(self,parent):
+        wx.Frame.__init__(self,parent,wx.ID_ANY,title="AutoRENT DVD Auth",size=(200,80),
+                          style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN )
+        self.Painel=wx.Panel(self)
+        wx.StaticText(self.Painel,-1,"Admin Pass: ",(20,20))
+        self.Pass=wx.TextCtrl(self.Painel,ID_PASS,'',(90,17),(80,-1),style=wx.TE_PROCESS_ENTER| wx.TE_PASSWORD)
+
+        self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter, id=ID_PASS)        
+
+    def OnEnter(self,evento):
+        self.PassStr = str(self.Pass.GetValue())
+        if self.PassStr == AdminPass:
+            global AdminLogged
+            AdminLogged=True
+            wx.MessageBox('Logado em Administrador!','Acesso Permitido!',wx.OK | wx.ICON_INFORMATION)
+            self.Destroy()
+        else:
+            self.ErrorCount+=1
+            if self.ErrorCount>2:
+                wx.MessageBox('Acesso Negado! Voce tentou obter acesso privilegiado 3 vezes!','Acesso Negado!',wx.OK | wx.ICON_ERROR)
+                self.Destroy()
+                return
+            wx.MessageBox('Senha incorreta!','Auth Error',wx.OK | wx.ICON_ERROR)
+            self.Pass.Clear()
+        
 if __name__ == '__main__':
     app = wx.App()
     loja = loja()
     carrinho=carrinho()
     janela = JanelaPrincipal(parent = None, id=ID_JANELA,title="AutoRENT DVDs")
-    janelaCadastroFilme = JanelaCadastroFilme(parent = janela, id = 99999999)
     janela.Center()
     janela.Show()
     app.MainLoop()
