@@ -44,6 +44,8 @@ ID_BUTAOPROCURAFILME = 116
 ID_BUTAOCADASTROFILME=444
 ID_MIDIACOMBO = 117
 ID_PASS=435
+ID_SHOWMOVIESLIST = 675
+ID_SHOWCLIENTSLIST = 678
 
 AdminLogged=False
 AdminPass = 'jrrtolkien'
@@ -79,7 +81,7 @@ class JanelaPrincipal(wx.Frame):
 
         CadastroeRemocao.Append(ID_CADASTROC,"Cadastrar Cliente", "Cadastra o Cliente no Sistema")
         CadastroeRemocao.Append(ID_REMOVERC, "Deletar Cliente", "Deleta o Cliente no Sistema")
-
+        
         menuSup.Append(File,"File")
         menuSup.Append(Carrinho, "Carrinho")
         menuSup.Append(CadastroeRemocao, "Cadastro e Remocao")
@@ -87,8 +89,8 @@ class JanelaPrincipal(wx.Frame):
 
         # -- EVENT HANDLERS MENU BAR -----------------------------------
         self.Bind(wx.EVT_MENU, self.OnExit, id=ID_EXIT)
-        self.Bind(wx.EVT_MENU, self.OnAddFilmes, id=ID_ADDM)
-        self.Bind(wx.EVT_MENU, self.OnDelFilmes, id=ID_DELM)
+        self.Bind(wx.EVT_MENU, self.OnButtomCadastroFilme, id=ID_ADDM)
+        self.Bind(wx.EVT_MENU, self.OnRemoverFilmes, id=ID_DELM)
         self.Bind(wx.EVT_MENU, self.OnMostrarClientes, id=ID_SHOWCLIENTS)
         self.Bind(wx.EVT_MENU, self.OnMostrarFilmes, id=ID_SHOWMOVIES)
         self.Bind(wx.EVT_MENU, self.OnCadastrarCliente, id=ID_CADASTROC)
@@ -98,6 +100,9 @@ class JanelaPrincipal(wx.Frame):
         wx.StaticText(self.Painel,ID_StaticNome,'Nome: ',(20,30))
         wx.StaticText(self.Painel,2,'CPF: ', (20,60))
 
+        wx.Button(self.Painel,id=ID_SEARCHCLIENTS,label="Procurar Cliente",pos=(300,25),size=(140,-1))
+        wx.Button(self.Painel,id=ID_CADASTROC, label='Cadastro de Cliente', pos=(300,55),size=(140,-1))
+
         # -- STATIC BOX FILMES --------------------------------------
         wx.StaticBox(self.Painel,-1,'Dados do Filme',(10,95),(450,150))
         wx.StaticText(self.Painel,4,'Titulo: ',(20,115))
@@ -105,8 +110,8 @@ class JanelaPrincipal(wx.Frame):
         wx.StaticText(self.Painel,6,'Codigo: ',(20,175))
         wx.StaticText(self.Painel,7,'Midia: ',(20,205))
 
-        wx.Button(self.Painel, id=ID_BUTAOPROCURAFILME, label="Procurar Filme", pos=(300,122), size=(140,-1))
-        wx.Button(self.Painel, id=ID_BUTAOCADASTROFILME, label="Cadastrar Filme", pos=(300,162), size=(140,-1))
+        wx.Button(self.Painel, id=ID_SEARCHMOVIES, label="Procurar Filme", pos=(300,122), size=(140,-1))
+        wx.Button(self.Painel, id=ID_ADDM, label="Cadastrar Filme", pos=(300,162), size=(140,-1))
 
         # -- ComboBox, SpinCtrl e TxtCtrl -------------------
         self.NomeCliente =wx.TextCtrl(self.Painel,ID_NOMECLIENTE,'',(90,27),(200,-1))
@@ -122,25 +127,32 @@ class JanelaPrincipal(wx.Frame):
         #self.Quantidade = wx.TextCtrl(self.Painel,1234,'',(90,230),(100,-1))
         
         # -- ListCtrl PARA RESULTADOS DE BUSCA ---------------
-        wx.StaticBox(self.Painel,-1,'Resultado de Busca',(10,250),(380,230))
-        self.ResultadoMovie=wx.ListCtrl(self.Painel,-1,(20,270),(360,200),style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        wx.StaticBox(self.Painel,-1,'Resultado de Busca de Filmes',(10,250),(380,230))
+
+        self.ResultadoMovie=wx.ListCtrl(self.Painel,ID_SHOWMOVIESLIST,(20,270),(360,200),style=wx.LC_REPORT|wx.SUNKEN_BORDER)
         self.ResultadoMovie.Show(True)
         self.ResultadoMovie.InsertColumn(7,'Codigo')
         self.ResultadoMovie.InsertColumn(8, 'Titulo')
         self.ResultadoMovie.InsertColumn(9, 'Categoria')
         self.ResultadoMovie.InsertColumn(10, 'Estoque')
+
+        wx.StaticBox(self.Painel,-1,'Clientes',(400,250),(380,230))
+
+        self.ResultadoCliente=wx.ListCtrl(self.Painel,ID_SHOWCLIENTSLIST,(410,270),(360,200),style=wx.LC_REPORT|wx.SUNKEN_BORDER)
+        self.ResultadoCliente.Show(True)
+        self.ResultadoCliente.InsertColumn(11,'Nome do Cliente')
+        self.ResultadoCliente.InsertColumn(12,'CPF')
+        self.ResultadoCliente.InsertColumn(13,'Situacao')        
         
 
         # -- EVENT HANDLERS BUTTONS ----------------------
 
-        self.Bind(wx.EVT_BUTTON, self.OnButtomCadastroFilme, id=ID_BUTAOCADASTROFILME)
+        self.Bind(wx.EVT_BUTTON, self.OnButtomCadastroFilme, id=ID_ADDM)
 
     def OnExit(self, evento):
         self.Close(True)
 
-    def OnAddFilmes(self, evento):
-        return
-    def OnDelFilmes(self, evento):
+    def OnButtomProcurarFilme(self,evento):
         return
 
     def OnButtomCadastroFilme(self,evento):
@@ -148,8 +160,9 @@ class JanelaPrincipal(wx.Frame):
             self.TituloStr = str(self.Titulo.GetValue())
             self.MidiaStr = str(self.Midia.GetValue())
             self.CodigoStr = str(self.Codigo.GetValue())
+            self.Quantidade=10
             try:
-                loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade.GetValue(),self.MidiaStr)
+                loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade,self.MidiaStr)
                 self.Titulo.Clear()
                 self.Codigo.Clear()
                 self.Midia.Clear()
@@ -182,6 +195,7 @@ class JanelaPrincipal(wx.Frame):
             loja.procurarClientes(self.NomeClienteStr, self.cpfClienteStr)
         except:
             wx.MessageBox('Erro! Falta de Dados para Busca!', 'Info', wx.OK | wx.ICON_ERROR)
+
 
 class JanelaDeAutenticacao(wx.Frame):
     ErrorCount = 0
