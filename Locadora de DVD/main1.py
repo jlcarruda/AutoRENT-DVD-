@@ -8,6 +8,7 @@
 #   - Implementar a conta do valor de acordo com Dia da Semana e Categoria
 #   - Terminar metodo de "devolucao"
 
+import wx
 import shelve
 from cliente import cliente
 from produto import produto
@@ -15,45 +16,30 @@ from datetime import date
 from carrinho import carrinho
 
 class loja:
-
+    listaDeFilmes=[]
+    lista=[]
+    # -------------------------------------- FUNCOES PRIVADAS --------------------------------------
     #Ira procurar o cliente por CPF no banco de dados de Clientes
     def __procurarClienteCPF(self,cpfCliente = None):
-        clientes = shelve.open("clientes.txt")
+        clientes = shelve.open("clientes")
+        if cpfCliente==None:
+            clientes.close()
+            wx.MessageBox('Erro no Codigo', 'Erro', wx.OK|wx.ICON_ERROR)
         if len(clientes) == 0:   #Retorna erro se o banco de dados estiver vazio
-            return "Banco de dados vazio!!", False
+            wx.MessageBox("Banco de dados vazio!!","Erro",wx.OK|wx.ICON_ERROR)
         for keys in clientes:
             clienteEncontrado = clientes[keys]
             if clienteEncontrado.cpf == cpfCliente:
                 clientes.close()
-                print "%s foi encontrado"%(clienteEncontrado.nome)
-                return clienteEncontrado
+                return clienteEncontrado, True
         clientes.close()
-        return "Cliente não encontrado", False
-
-    def __procurarFilme(self, nomeFilme=None,codigo=None):
-        filmes = shelve.open("filmes.txt")
-        if nomeFilme==None and codigo==None:
-            filmes.close()
-            return "Por favor, preencha os campos para pesquisa",False
-        if nomeFilme==None or (nomeFilme!=None and codigo!=None):
-            for x in filmes:
-                if filmes[x].codigo == codigo:
-                    filmeEncontrado=filmes[x]
-                    return filmeEncontrado,filmes.close()
-        if codigo==None:
-           if filmes.has_key(nomeFilme)==True:
-                filmeEncontrado = filmes[nomeFilme]
-                return filmeEncontrado,filmes.close()
-        else:
-            filmes.close()
-            return "Filme não encontrado", False
-
+        return False
 
     #Procurar Cliente pelo NOME no banco de dados de Clientes
     def __procurarClienteNome(self,nomeCliente=None):
-        clientes = shelve.open("clientes.txt")
+        clientes = shelve.open("clientes")
         if len(clientes) == 0:
-            return "Banco de dados vazio!!", False
+            wx.MessageBox("Banco de Dados vazio!","Info",wx.OK|wx.ICON_INFORMATION)
         for keys in clientes:
             if keys == nomeCliente:
                 clienteEncontrado = clientes[nomeCliente]
@@ -61,39 +47,93 @@ class loja:
                 print "%s foi encontrado"%(clienteEncontrado.nome)
                 return clienteEncontrado
         clientes.close()
-        return "Cliente não encontrado", False
+        wx.MessageBox("Cliente não encontrado","Info",wx.OK|wx.ICON_INFORMATION)
+        return False
 
     #Função Privada para cadastrar lotes de filmes
     def __cadastrarFilmes(self,nomeFilme=None,codigo=None,qtd=None,Midia=None):
-        filmes = shelve.open("filmes.txt", writeback=True)
-        if nomeFilme==None or codigo==None or qtd==None or Midia==None:
-            filmes.close()
-            return "Campos em branco", False
+        filmes = shelve.open("filmes", writeback=True)
         if filmes.has_key(nomeFilme)==True and filmes[nomeFilme].codigo==codigo:
             filmes.close()
-            return "Filme já cadastrado no Banco de Dados", False
+            wx.MessageBox("Filme já cadastrado no Banco de Dados",'Info',wx.OK|wx.ICON_INFORMATION)
+            return False
         else:
             dataHj = date.today()
             f=produto(nomeFilme,codigo,qtd,dataHj,Midia)
             filmes[nomeFilme]=f
             filmes.close()
-            return "Filme cadastrado com sucesso", True
+            wx.MessageBox("Filme cadastrado com sucesso",'Info',wx.OK|wx.ICON_INFORMATION)
+            return True
 
     #Função Privada para cadastrar Clientes
     def __cadastrarClientes(self, nome = None, CPF = None):
-        clientes = shelve.open("clientes.txt", writeback = True)
+        clientes = shelve.open("clientes", writeback = True)
         if nome == None or CPF == None:
             clientes.close()
             return False
         if clientes.has_key(nome) == True and clientes[nome].cpf == CPF:
-            return "Cliente já cadastrado.", False
+            wx.MessageBos('Cliente ja cadastrado','Info',wx.OK|wx.ICON_INFORMATION)
+            return False
         else:
             c = cliente(nome, CPF)
             clientes[nome] = c
             clientes.close()
             return "Cliente cadastrado com exito", True
+    
+    # Funcao que vai retornar uma lista de 10 congruencias 
+    def __procurarFilme(self,titulo, codigo, categoria, midia):
+        filmes=shelve.open("filmes")
+        listaDeFilmes=[]
+        if len(filmes)==0:
+            wx.MessageBox('Banco de Dados Vazio!','Info',wx.OK|wx.ICON_INFORMATION)
+            return False
+        if (titulo == codigo) and (categoria==codigo) and (midia == categoria) and titulo=='': 
+            for filme in filmes:
+                if len(self.listaDeFilmes) == 10:
+                    break
+                self.listaDeFilmes.append(filmes[filme])
+            return self.listaDeFilmes,filmes.close(),True
+        
+        if titulo=='' or (titulo!='' and codigo!=''):
+            for x in filmes:
+                if len(self.listaDeFilmes) == 10:
+                    break
+                if filmes[x].codigo == codigo:
+                    filmeEncontrado=filmes[x]
+                    self.listaDeFilmes.append(filmeEncontrado)
+            return self.listaDeFilmes,filmes.close(), True   
+
+        if titulo!='':
+            if filmes.has_key(titulo)==True:
+                filmeEncontrado = filmes[nomeFilme]
+                self.listaDeFilmes.append(filmeEncontrado)
+                filmes.close()
+                return self.listaDeFilmes, True
+            else:
+                return False
+            
+        if midia!='':
+            for filme in filmes:
+                if len(self.listaDeFilmes) == 10:
+                    break
+                if filmes[filme].midia == midia:
+                    self.listaDeFilmes.append(filmes[filme])
+            return self.listaDeFilmes, filmes.close(), True
+
+        if categoria!='':
+            for filme in filmes:
+                if len(self.listaDeFilmes)==10:
+                    break
+                if filmes[filme].categoria == categoria:
+                    self.listaDeFilmes.append(filmes[filme])
+            return self.listaDeFilmes, filmes.close(), True
+
+        else:
+            filmes.close()
+            wx.MessageBox('Filme nao Encontrado','Info', wx.OK|wx.ICON_INFORMATION)
 
 
+    # -------------------------------- FUNÇOES EFETIVAS ---------------------------------------------------
     def procurarCliente(self,nomeCliente=None,cpf=None):
         if nomeCliente==None and cpf==None:
             return "Preencha um dos campos", False
@@ -101,28 +141,35 @@ class loja:
         if nomeCliente==None or (nomeCliente!=None and cpf!=None):
             try:
                 self.__procurarClienteCPF(cpf)
-            except IOError:
-                return False
+            except:
+                wx.MessageBox("Cliente não encontrado","Info",wx.OK|wx.ICON_INFORMATION)
         if cpf==None:
             try:
                 self.__procurarClienteNome(nomeCliente)
-            except IOError:
-                return False
-
-
+            except:
+                wx.MessageBox("Cliente não encontrado","Info",wx.OK|wx.ICON_INFORMATION)
+                
+    
     def cadastroCliente(self, nome = None, cpf = None):
         try:
             self.__cadastrarClientes(nome, cpf)
-        except IOError,False:
+        except:
             return "Erro ao tentar cadastrar o Cliente", False
 
     def cadastroFilme(self, nome, codigo, quantidade, midia):
         try:
             self.__cadastrarFilmes(nome,codigo,quantidade,midia)
-        except IOError, False:
-            return "Erro ao tentar cadastrar o Filme no Database", False
+        except:
+            return False
 
-
+    def procurarFilme(self,titulo,codigo, categoria,midia): 
+        try:
+            self.lista = self.__procurarFilme(titulo,codigo,categoria,midia)
+            return self.lista[0]
+        except:
+            wx.MessageBox('Erro ao procurar Filme','Error',wx.OK|wx.ICON_INFORMATION)
+            return False
+            
     def alugar(self,filmes=None):
         if filmes==None:
            if len(carrinho.carrinhoDeCompras)!=0:

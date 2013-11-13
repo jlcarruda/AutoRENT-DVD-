@@ -16,7 +16,7 @@
 # - Exibir os dados de Procura
 
 
-import wx
+
 from main1 import *
 
 ID_CARRINHOJANELA = 1001
@@ -51,6 +51,9 @@ AdminLogged=False
 AdminPass = 'jrrtolkien'
 
 class JanelaPrincipal(wx.Frame):
+    Msg = None
+    listaDeItems = []
+    item=[]
     def __init__(self, parent, id, title):
         wx.Frame.__init__(self,parent,wx.ID_ANY,title=title, size=(800,600),
              style= wx.MINIMIZE_BOX | wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN | wx.NO_FULL_REPAINT_ON_RESIZE)
@@ -130,11 +133,15 @@ class JanelaPrincipal(wx.Frame):
         wx.StaticBox(self.Painel,-1,'Resultado de Busca de Filmes',(10,250),(380,230))
 
         self.ResultadoMovie=wx.ListCtrl(self.Painel,ID_SHOWMOVIESLIST,(20,270),(360,200),style=wx.LC_REPORT|wx.SUNKEN_BORDER)
-        self.ResultadoMovie.Show(True)
-        self.ResultadoMovie.InsertColumn(7,'Codigo')
-        self.ResultadoMovie.InsertColumn(8, 'Titulo')
-        self.ResultadoMovie.InsertColumn(9, 'Categoria')
-        self.ResultadoMovie.InsertColumn(10, 'Estoque')
+       
+        ID_ESTOQUE=10
+        ID_MIDIA=14
+                
+        self.ResultadoMovie.InsertColumn(ID_CODIGO,'Codigo')
+        self.ResultadoMovie.InsertColumn(ID_TITULO, 'Titulo')
+        self.ResultadoMovie.InsertColumn(ID_CATEGORIA, 'Categoria')
+        self.ResultadoMovie.InsertColumn(ID_ESTOQUE, 'Estoque')
+        self.ResultadoMovie.InsertColumn(ID_MIDIA, 'Midia')
 
         wx.StaticBox(self.Painel,-1,'Clientes',(400,250),(380,230))
 
@@ -142,18 +149,49 @@ class JanelaPrincipal(wx.Frame):
         self.ResultadoCliente.Show(True)
         self.ResultadoCliente.InsertColumn(11,'Nome do Cliente')
         self.ResultadoCliente.InsertColumn(12,'CPF')
-        self.ResultadoCliente.InsertColumn(13,'Situacao')        
+        self.ResultadoCliente.InsertColumn(13,'Situacao')
+        
+    
         
 
         # -- EVENT HANDLERS BUTTONS ----------------------
 
         self.Bind(wx.EVT_BUTTON, self.OnButtomCadastroFilme, id=ID_ADDM)
+        self.Bind(wx.EVT_BUTTON, self.OnCadastrarCliente, id=ID_CADASTROC)
+        self.Bind(wx.EVT_BUTTON, self.OnMostrarClientes, id=ID_SEARCHCLIENTS)
+        self.Bind(wx.EVT_BUTTON, self.OnButtomProcurarFilme, id=ID_SEARCHMOVIES)
 
+            
     def OnExit(self, evento):
         self.Close(True)
 
     def OnButtomProcurarFilme(self,evento):
-        return
+        self.TituloStr = str(self.Titulo.GetValue())
+        self.MidiaStr = str(self.Midia.GetValue())
+        self.CategoriaStr = str(self.Categoria.GetValue())
+        self.CodigoStr = str(self.Codigo.GetValue())
+        index = 0
+        try:    
+            self.listaDeItems = loja.procurarFilme(self.TituloStr, self.CodigoStr, self.CategoriaStr, self.MidiaStr)
+            for x in self.listaDeItems:
+                '''for y in self.listaDeItems[x]:
+                    self.item.append(self.listaDeItems[x][y].codigo)
+                    self.item.append(self.listaDeItems[x][y].titulo)
+                    self.item.append(self.listaDeItems[x][y].categoria)
+                    self.item.append(self.listaDeItems[x][y].quantidade)
+                    self.ResultadoMovie.Append(self.item)'''
+                
+                self.ResultadoMovie.InsertStringItem(index,x.codigo)
+                self.ResultadoMovie.SetStringItem(index,ID_TITULO,x.titulo)
+                self.ResultadoMovie.SetStringItem(index,ID_CATEGORIA,x.categoria)
+                self.ResultadoMovie.SetStringItem(index,ID_ESTOQUE,x.quantidade)
+                self.ResultadoMovie.SetStringItem(index,ID_MIDIA,x.midia)
+                index+=1
+                
+                    
+                    
+        except:
+            wx.MessageBox('Filme(s) nao encontrado(s)', 'Info',wx.OK|wx.ICON_INFORMATION)
 
     def OnButtomCadastroFilme(self,evento):
         if AdminLogged==True:
@@ -162,10 +200,14 @@ class JanelaPrincipal(wx.Frame):
             self.CodigoStr = str(self.Codigo.GetValue())
             self.Quantidade=10
             try:
+                if (self.TituloStr == self.CodigoStr) and (self.MidiaStr == self.TituloStr) and self.CodigoStr==self.MidiaStr:
+                    wx.MessageBox('Dados não preenchidos corretamente','Info',wx.OK|wx.ICON_EXCLAMATION)
+                    return False              
                 loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade,self.MidiaStr)
                 self.Titulo.Clear()
                 self.Codigo.Clear()
                 self.Midia.Clear()
+                wx.MessageBox('Filme Cadastrado com Sucesso','Info',wx.OK|wx.ICON_INFORMATION)
             except:
                 wx.MessageBox('Erro! Nao foi possivel continuar o cadastro!', 'Error', wx.OK | wx.ICON_ERROR)
         if AdminLogged==False:
@@ -174,27 +216,39 @@ class JanelaPrincipal(wx.Frame):
             janelaAuth.Center()
        
     def OnCadastrarCliente(self,evento):
-        return
+        try:
+            self.NomeStr = str(self.NomeCliente.GetValue())
+            self.CPF = str(self.cpfCliente.GetValue())
+            if self.NomeStr == self.CPF:
+                wx.MessageBox('Dados nao preenchidos corretamente', 'Info',wx.OK|wx.ICON_EXCLAMATION)
+                return False
+            loja.cadastroCliente(self.NomeStr, self.CPF)
+        except:
+            wx.MessageBox('Erro ao tentar cadastrar o Cliente','Error',wx.OK|wx.ICON_ERROR)
+
     def OnRemoverCliente(self,evento):
         return
+
     def OnRemoverFilmes(self,evento):
         return
 
     def OnMostrarFilmes(self, evento):
-        # Chama o loja.ProcurarFilme(nomeFilme, codigo) e retorn a o resultado
         try:
-            loja.procurarFilmes(self.Titulo,self.Codigo, self.Categoria)
+            self.listaDeItems = loja.procurarFilme('','','','')
         except:
-            wx.MessageBox('Erro!', 'Info', wx.OK | wx.ICON_ERROR)
+            wx.MessageBox('Erro ao tentar completar a busca por Filmes no Banco de Dados', 'Erro', wx.OK | wx.ICON_ERROR)
 
     def OnMostrarClientes(self, evento):
         # Basicamente vai chamar o Procurar Cliente e mostrar na tela, loja.ProcurarCliente(nomeCliente, CPF)
-        self.NomeClienteStr = janela.NomeCliente.GetStringSelection()
-        self.cpfClienteStr = janela.cpfCliente.GetValue()
-        try:
-            loja.procurarClientes(self.NomeClienteStr, self.cpfClienteStr)
-        except:
-            wx.MessageBox('Erro! Falta de Dados para Busca!', 'Info', wx.OK | wx.ICON_ERROR)
+        self.NomeStr = str(self.NomeCliente.GetValue())
+        self.CPF = str(self.cpfCliente.GetValue())
+        if self.NomeStr == '' and self.CPF == '':          # Se o usuario nao preencher os campos de Informação
+            wx.MessageBox('Dados nao preenchidos corretamente', 'Info',wx.OK|wx.ICON_EXCLAMATION)
+            return False
+        loja.procurarClientes(self.NomeClienteStr, self.cpfClienteStr)
+    
+        
+    
 
 
 class JanelaDeAutenticacao(wx.Frame):
