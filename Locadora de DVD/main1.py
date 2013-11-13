@@ -18,6 +18,7 @@ from carrinho import carrinho
 class loja:
     listaDeFilmes=[]
     lista=[]
+    listaDeClientes=[]
     # -------------------------------------- FUNCOES PRIVADAS --------------------------------------
     #Ira procurar o cliente por CPF no banco de dados de Clientes
     def __procurarClienteCPF(self,cpfCliente = None):
@@ -27,28 +28,38 @@ class loja:
             wx.MessageBox('Erro no Codigo', 'Erro', wx.OK|wx.ICON_ERROR)
         if len(clientes) == 0:   #Retorna erro se o banco de dados estiver vazio
             wx.MessageBox("Banco de dados vazio!!","Erro",wx.OK|wx.ICON_ERROR)
+        
         for keys in clientes:
             clienteEncontrado = clientes[keys]
             if clienteEncontrado.cpf == cpfCliente:
                 clientes.close()
-                return clienteEncontrado, True
+                self.listaDeClientes.append(clienteEncontrado)
+                return self.listaDeClientes
+            elif clientes[keys].cpf[:len(cpfCliente)] == cpfCliente:
+                self.listaDeClientes.append(clienteEncontrado)
         clientes.close()
-        return False
+        elif len(self.listaDeClientes)==0:
+            wx.MessageBox('Nenhum Cliente Encontrado','Erro')
+        return self.listaDeClientes
 
     #Procurar Cliente pelo NOME no banco de dados de Clientes
     def __procurarClienteNome(self,nomeCliente=None):
         clientes = shelve.open("clientes")
         if len(clientes) == 0:
             wx.MessageBox("Banco de Dados vazio!","Info",wx.OK|wx.ICON_INFORMATION)
-        for keys in clientes:
-            if keys == nomeCliente:
-                clienteEncontrado = clientes[nomeCliente]
-                clientes.close()
-                print "%s foi encontrado"%(clienteEncontrado.nome)
-                return clienteEncontrado
-        clientes.close()
-        wx.MessageBox("Cliente não encontrado","Info",wx.OK|wx.ICON_INFORMATION)
-        return False
+        if nomeCliente!='':
+            for keys in clientes:
+                if keys == nomeCliente:
+                    clienteEncontrado = clientes[nomeCliente]
+                    clientes.close()
+                    self.listaDeClientes.append(clienteEncontrado)
+                    return self.listaDeClientes
+                elif keys[:len(nomeCliente)].upper == nomeCliente.upper():
+                    self.listaDeClientes.append(clientes[keys])
+            clientes.close()
+            return self.listaDeClientes
+            wx.MessageBox('Varias Congruencias')
+            
 
     #Função Privada para cadastrar lotes de filmes
     def __cadastrarFilmes(self,nomeFilme=None,codigo=None,qtd=None,Midia=None):
@@ -61,8 +72,7 @@ class loja:
             dataHj = date.today()
             f=produto(nomeFilme,codigo,qtd,dataHj,Midia)
             filmes[nomeFilme]=f
-            filmes.close()
-            wx.MessageBox("Filme cadastrado com sucesso",'Info',wx.OK|wx.ICON_INFORMATION)
+            filmes.close()      
             return True
 
     #Função Privada para cadastrar Clientes
@@ -86,31 +96,32 @@ class loja:
         listaDeFilmes=[]
         if len(filmes)==0:
             wx.MessageBox('Banco de Dados Vazio!','Info',wx.OK|wx.ICON_INFORMATION)
-            return False
-        if (titulo == codigo) and (categoria==codigo) and (midia == categoria) and titulo=='': 
+        if (titulo == codigo) and (categoria==titulo) and (midia == titulo) and titulo=='': 
             for filme in filmes:
-                if len(self.listaDeFilmes) == 10:
-                    break
                 self.listaDeFilmes.append(filmes[filme])
-            return self.listaDeFilmes,filmes.close(),True
+            filmes.close()
+            return self.listaDeFilmes
         
         if titulo=='' or (titulo!='' and codigo!=''):
             for x in filmes:
-                if len(self.listaDeFilmes) == 10:
-                    break
                 if filmes[x].codigo == codigo:
                     filmeEncontrado=filmes[x]
                     self.listaDeFilmes.append(filmeEncontrado)
-            return self.listaDeFilmes,filmes.close(), True   
+            filmes.close()
+            return self.listaDeFilmes  
 
         if titulo!='':
-            if filmes.has_key(titulo)==True:
+            if filmes.has_key(titulo):
                 filmeEncontrado = filmes[nomeFilme]
                 self.listaDeFilmes.append(filmeEncontrado)
                 filmes.close()
-                return self.listaDeFilmes, True
+                return self.listaDeFilmes
             else:
-                return False
+                for filme in filmes:
+                    if filme[:len(titulo)].upper()==titulo.upper():
+                        self.listaDeFilmes.append(filmes[filme])
+                if len(listaDeFilmes)==0:                
+                    filmes.close()
             
         if midia!='':
             for filme in filmes:
@@ -118,7 +129,8 @@ class loja:
                     break
                 if filmes[filme].midia == midia:
                     self.listaDeFilmes.append(filmes[filme])
-            return self.listaDeFilmes, filmes.close(), True
+            filmes.close()
+            return self.listaDeFilmes
 
         if categoria!='':
             for filme in filmes:
@@ -126,24 +138,25 @@ class loja:
                     break
                 if filmes[filme].categoria == categoria:
                     self.listaDeFilmes.append(filmes[filme])
-            return self.listaDeFilmes, filmes.close(), True
+            filmes.close()
+            return self.listaDeFilmes
+        
 
         else:
             filmes.close()
-            wx.MessageBox('Filme nao Encontrado','Info', wx.OK|wx.ICON_INFORMATION)
-
+            return self.listaDeFilmes
 
     # -------------------------------- FUNÇOES EFETIVAS ---------------------------------------------------
     def procurarCliente(self,nomeCliente=None,cpf=None):
         if nomeCliente==None and cpf==None:
             return "Preencha um dos campos", False
 
-        if nomeCliente==None or (nomeCliente!=None and cpf!=None):
+        if nomeCliente=='' or (nomeCliente!='' and cpf!=''):
             try:
                 self.__procurarClienteCPF(cpf)
             except:
                 wx.MessageBox("Cliente não encontrado","Info",wx.OK|wx.ICON_INFORMATION)
-        if cpf==None:
+        if cpf=='':
             try:
                 self.__procurarClienteNome(nomeCliente)
             except:
@@ -163,9 +176,15 @@ class loja:
             return False
 
     def procurarFilme(self,titulo,codigo, categoria,midia): 
+        if len(self.listaDeFilmes)>0:
+            for x in self.listaDeFilmes:
+                self.listaDeFilmes.remove(x)
+        if len(self.lista)>0:
+           for x in self.lista:
+               self.lista.remove(x)
         try:
             self.lista = self.__procurarFilme(titulo,codigo,categoria,midia)
-            return self.lista[0]
+            return self.lista
         except:
             wx.MessageBox('Erro ao procurar Filme','Error',wx.OK|wx.ICON_INFORMATION)
             return False
