@@ -305,7 +305,7 @@ class JanelaPrincipal(wx.Frame):
             for x in range(0,len(self.listaDeClientes)):
                 self.ResultadoCliente.InsertStringItem(self.index,self.listaDeClientes[x].nome)
                 self.ResultadoCliente.SetStringItem(self.index,1,self.listaDeClientes[x].cpf)
-                self.ResultadoCliente.SetStringItem(self.index,2,str(self.listaDeClientes[x].situacao))
+                self.ResultadoCliente.SetStringItem(self.index,2,self.listaDeClientes[x].situacao)
                 self.index+=1
                 
         except:

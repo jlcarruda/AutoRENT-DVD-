@@ -64,27 +64,30 @@ class loja:
         return self.listaDeClientes
 
     #Procurar Cliente pelo NOME no banco de dados de Clientes
-    def __procurarClienteNome(self,nomeCliente=None):
+    def __procurarClienteNome(self,nomeCliente):
         clientes = shelve.open("clientes")
         if len(clientes) == 0:
             wx.MessageBox("Banco de Dados vazio!","Info",wx.OK|wx.ICON_INFORMATION)
         if nomeCliente!='':
-            for keys in clientes:
-                if keys == nomeCliente:
-                    clienteEncontrado = clientes[nomeCliente]
-                    clientes.close()
-                    self.listaDeClientes.append(clienteEncontrado)
-                    return self.listaDeClientes
-                elif keys[:len(nomeCliente)].upper == nomeCliente.upper():
-                    self.listaDeClientes.append(clientes[keys])
+            if clientes.has_key(nomeCliente):
+                clienteEncontrado = clientes[nomeCliente]
+                clientes.close()
+                self.listaDeClientes.append(clienteEncontrado)
+                return self.listaDeClientes
+            else:
+                for keys in clientes:
+                    if keys[:len(nomeCliente)].upper() == nomeCliente.upper():
+                        self.listaDeClientes.append(clientes[keys])
+                clientes.close()
+                return self.listaDeClientes        
         else:
             for keys in clientes:
                 self.listaDeClientes.append(clientes[keys])
                 
-            clientes.close()
-            return self.listaDeClientes
-            wx.MessageBox('Varias Congruencias')
-            
+        clientes.close()
+        return self.listaDeClientes
+        wx.MessageBox('Varias Congruencias')
+                
 
     #Função Privada para cadastrar lotes de filmes
     def __cadastrarFilmes(self,nomeFilme=None,codigo=None,qtd=None,Midia=None):
@@ -172,21 +175,16 @@ class loja:
             return self.listaDeFilmes
 
     # -------------------------------- FUNÇOES EFETIVAS ---------------------------------------------------
-    def procurarCliente(self,nomeCliente=None,cpf=None):
-        if len(self.listaDeClientes)>0:
-            for x in self.listaDeClientes:
-                self.listaDeClientes.remove(x)
-        if len(self.lista)>0:
-           for x in self.lista:
-               self.lista.remove(x)
-
+    def procurarCliente(self,nomeCliente,cpf):
+        self.lista=[]
+        self.listaDeClientes=[]
         if nomeCliente!='' and cpf!='':
             try:
                 self.lista=self.__procurarClienteAll(nomeCliente,cpf)
                 return self.lista
             except:
-                pass
-        if (nomeCliente=='' and cpf=='') or cpf=='':
+                wx.MessageBox('Erro Aqui')
+        if (nomeCliente=='' and cpf=='') or cpf=='' or nomeCliente!='':
             try:
                 self.lista=self.__procurarClienteNome(nomeCliente)
                 return self.lista
