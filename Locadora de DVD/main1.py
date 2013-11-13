@@ -6,7 +6,9 @@
 
 #___METAS_________-
 #   - Implementar a conta do valor de acordo com Dia da Semana e Categoria
-#   - Terminar metodo de "devolucao"
+#   - Implementar o metodo de "Alugar" e "Devolver"
+#   - Consertar Procura de Clientes por CPF/Nome (Publica e Privada)
+#   - Implementar os metodos de "Remover Cliente" e "Remover Filmes"
 
 import wx
 import shelve
@@ -20,6 +22,25 @@ class loja:
     lista=[]
     listaDeClientes=[]
     # -------------------------------------- FUNCOES PRIVADAS --------------------------------------
+    def __procurarClienteAll(self,nomeCliente,cpfCliente):
+        clientes=shelve.open('clientes')
+        if clientes.has_key(nomeCliente.upper()):
+            if clientes[nomeCliente.upper()].cpf == cpfCliente:
+                self.listaDeClientes.append(clientes[nomeCliente.upper()])
+                clientes.close()
+                return self.listaDeClientes 
+        if clientes.has_key(nomeCliente.upper())==False:
+            for x in clientes:
+                if x[:len(nomeCliente)] == nomeCliente.upper():
+                    if clientes[x].cpf==cpfCliente:
+                        self.listaDeClientes.append(clientes[x])
+                        clientes.close()
+                        return self.listaDeClientes
+        if len(listaDeClientes)==0:
+            wx.MessageBox('Cliente nao Encontrado','Info',wx.OK|wx.ICON_INFORMATION)
+            clientes.close()
+            return self.listaDeClientes
+        
     #Ira procurar o cliente por CPF no banco de dados de Clientes
     def __procurarClienteCPF(self,cpfCliente = None):
         clientes = shelve.open("clientes")
@@ -38,7 +59,7 @@ class loja:
             elif clientes[keys].cpf[:len(cpfCliente)] == cpfCliente:
                 self.listaDeClientes.append(clienteEncontrado)
         clientes.close()
-        elif len(self.listaDeClientes)==0:
+        if len(self.listaDeClientes)==0:
             wx.MessageBox('Nenhum Cliente Encontrado','Erro')
         return self.listaDeClientes
 
@@ -56,6 +77,10 @@ class loja:
                     return self.listaDeClientes
                 elif keys[:len(nomeCliente)].upper == nomeCliente.upper():
                     self.listaDeClientes.append(clientes[keys])
+        else:
+            for keys in clientes:
+                self.listaDeClientes.append(clientes[keys])
+                
             clientes.close()
             return self.listaDeClientes
             wx.MessageBox('Varias Congruencias')
@@ -86,7 +111,7 @@ class loja:
             return False
         else:
             c = cliente(nome, CPF)
-            clientes[nome] = c
+            clientes[c.nomeid] = c
             clientes.close()
             return "Cliente cadastrado com exito", True
     
@@ -120,7 +145,7 @@ class loja:
                 for filme in filmes:
                     if filme[:len(titulo)].upper()==titulo.upper():
                         self.listaDeFilmes.append(filmes[filme])
-                if len(listaDeFilmes)==0:                
+                if len(self.listaDeFilmes)==0:                
                     filmes.close()
             
         if midia!='':
@@ -148,21 +173,33 @@ class loja:
 
     # -------------------------------- FUNÇOES EFETIVAS ---------------------------------------------------
     def procurarCliente(self,nomeCliente=None,cpf=None):
-        if nomeCliente==None and cpf==None:
-            return "Preencha um dos campos", False
+        if len(self.listaDeClientes)>0:
+            for x in self.listaDeClientes:
+                self.listaDeClientes.remove(x)
+        if len(self.lista)>0:
+           for x in self.lista:
+               self.lista.remove(x)
 
-        if nomeCliente=='' or (nomeCliente!='' and cpf!=''):
+        if nomeCliente!='' and cpf!='':
             try:
-                self.__procurarClienteCPF(cpf)
+                self.lista=self.__procurarClienteAll(nomeCliente,cpf)
+                return self.lista
             except:
-                wx.MessageBox("Cliente não encontrado","Info",wx.OK|wx.ICON_INFORMATION)
-        if cpf=='':
+                pass
+        if (nomeCliente=='' and cpf=='') or cpf=='':
             try:
-                self.__procurarClienteNome(nomeCliente)
+                self.lista=self.__procurarClienteNome(nomeCliente)
+                return self.lista
             except:
-                wx.MessageBox("Cliente não encontrado","Info",wx.OK|wx.ICON_INFORMATION)
-                
-    
+                wx.MessageBox('Error ao procurar Cliente por Nome','Error',wx.OK|wx.ICON_INFORMATION)
+        elif nomeCliente=='':
+            try:
+                self.lista = self.__procurarClienteCPF(cpf)
+                return self.lista
+            except:
+                wx.MessageBox('Error ao procurar Cliente por CPF',"Error",wx.OK|wx.ICON_ERROR)
+            
+            
     def cadastroCliente(self, nome = None, cpf = None):
         try:
             self.__cadastrarClientes(nome, cpf)

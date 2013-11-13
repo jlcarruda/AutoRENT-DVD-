@@ -12,11 +12,15 @@
 
 # Metas
 # - Decidir o que fazer com a ideia de Autenticação ----- >[OK]
-# - Exibir os dados de Procura de Filmes ----------> [OK]
-# - Exibir os dados de Procura de Clientes
+
+# - Exibir os dados de Procura de Filmes ----------> 
+# ----- Exibir dados filtrados por Categoria e Midia 
+# ----- Exibir dados filtrados por Titulo e Codigo -----> [OK]
+
+# - Exibir os dados de Procura de Clientes --------> [OK]
 # - Adicionar e Implementar os Botoes de "Remover Cliente" e "Remover Filme"(ADM Sensitive)
 # - Adicionar e Implementar os Botoes de "Alugar" e "Devolver"
-
+# - Opcional -- Adicionar um menu Float nos items da lista para Facilitar operacoes
 
 
 from main1 import *
@@ -50,7 +54,7 @@ ID_SHOWMOVIESLIST = 675
 ID_SHOWCLIENTSLIST = 678
 ID_ADMLOGOUT=992
 
-
+##############################################################################################################
 class JanelaPrincipal(wx.Frame):
     AdminLogged=False
     AdminPass = 'jrrtolkien'
@@ -106,6 +110,7 @@ class JanelaPrincipal(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnMostrarClientes, id=ID_SHOWCLIENTS)
         self.Bind(wx.EVT_MENU, self.OnMostrarFilmes, id=ID_SHOWMOVIES)
         self.Bind(wx.EVT_MENU, self.OnCadastrarCliente, id=ID_CADASTROC)
+        self.Bind(wx.EVT_MENU, self.OnRemoverCliente, id=ID_REMOVERC)
         self.Bind(wx.EVT_MENU, self.ADMCheck, id=ID_ADMLOGOUT)
 
         # -- STATIC BOX CLIENTES ------------------------------------
@@ -175,7 +180,12 @@ class JanelaPrincipal(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnMostrarClientes, id=ID_SEARCHCLIENTS)
         self.Bind(wx.EVT_BUTTON, self.OnButtomProcurarFilme, id=ID_SEARCHMOVIES)
 
-
+    #---------------------------------------------------------------------------------------------------------------------
+    def GetItemSelecionado(self):
+         '''get the currently focused item or -1 if none'''
+         return self.GetNextItem(-1, wx.LIST_NEXT_ALL,
+            wx.LIST_STATE_FOCUSED)
+        
     def ADMCheck(self,evento):
         if self.AdminLogged==False:
             wx.MessageBox('Operacao Invalida','Error',wx.OK|wx.ICON_ERROR)
@@ -186,10 +196,10 @@ class JanelaPrincipal(wx.Frame):
             self.TextEstoque.Show(False)
             self.Painel.Show()
             wx.MessageBox('ADM Deslogado com Sucesso!','Info',wx.OK|wx.ICON_INFORMATION)
-            
+    #---------------------------------------------------------------------------------------------------------------------        
     def OnExit(self, evento):
         self.Close(True)
-
+    #---------------------------------------------------------------------------------------------------------------------
     def OnButtomProcurarFilme(self,evento):
         self.TituloStr = str(self.Titulo.GetValue())
         self.MidiaStr = str(self.Midia.GetValue())
@@ -207,8 +217,8 @@ class JanelaPrincipal(wx.Frame):
                 self.ResultadoMovie.SetStringItem(self.index,4,self.listaDeItems[x].midia)
                 self.index+=1
         except:
-            wx.MessageBox('Erro de busca!', 'Erro[195]',wx.OK|wx.ICON_ERROR)
-
+            wx.MessageBox('Erro de busca!', 'Erro[211]',wx.OK|wx.ICON_ERROR)
+    #---------------------------------------------------------------------------------------------------------------------
     def OnButtomCadastroFilme(self,evento):
         if self.AdminLogged==True:
             self.TituloStr = str(self.Titulo.GetValue())
@@ -219,7 +229,7 @@ class JanelaPrincipal(wx.Frame):
                 if (self.TituloStr == self.CodigoStr) and (self.MidiaStr == self.TituloStr) and self.CodigoStr==self.MidiaStr and self.TituloStr=='':
                     wx.MessageBox('Dados não preenchidos corretamente','Info',wx.OK|wx.ICON_EXCLAMATION)
                     return False
-                loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.Quantidade,self.MidiaStr)
+                loja.cadastroFilme(self.TituloStr,self.CodigoStr,self.QuantidadeStr,self.MidiaStr)
                 self.Titulo.Clear()
                 self.Codigo.Clear()
                 wx.MessageBox('Filme Cadastrado com Sucesso','Info',wx.OK|wx.ICON_INFORMATION)
@@ -229,25 +239,50 @@ class JanelaPrincipal(wx.Frame):
             janelaAuth=JanelaDeAutenticacao(janela)
             janelaAuth.Show()
             janelaAuth.Center()
-       
+    #---------------------------------------------------------------------------------------------------------------------   
     def OnCadastrarCliente(self,evento):
+        self.NomeStr = str(self.NomeCliente.GetValue())
+        self.CPF = str(self.cpfCliente.GetValue())
+        if self.NomeStr == self.CPF or self.NomeStr=='' or self.CPF =='':
+            wx.MessageBox('Dados nao preenchidos corretamente', 'Info',wx.OK|wx.ICON_EXCLAMATION)
+            return False
         try:
-            self.NomeStr = str(self.NomeCliente.GetValue())
-            self.CPF = str(self.cpfCliente.GetValue())
-            if self.NomeStr == self.CPF or self.Nome=='' or self.CPF =='':
-                wx.MessageBox('Dados nao preenchidos corretamente', 'Info',wx.OK|wx.ICON_EXCLAMATION)
-                return False
             loja.cadastroCliente(self.NomeStr, self.CPF)
             wx.MessageBox('Cliente Cadastrado com sucesso','Info',wx.OK|wx.ICON_INFORMATION)
         except:
             wx.MessageBox('Erro ao tentar cadastrar o Cliente','Error',wx.OK|wx.ICON_ERROR)
-
+    #---------------------------------------------------------------------------------------------------------------------
     def OnRemoverCliente(self,evento):
-        return
+        if self.AdminLogged:
+            self.NomeStr = str(self.NomeCliente.GetValue())
+            self.CPF = str(self.cpfCliente.GetValue())
+            if self.NomeStr == self.CPF or self.NomeStr=='' or self.CPF =='':
+                wx.MessageBox('Dados nao preenchidos corretamente', 'Info',wx.OK|wx.ICON_EXCLAMATION)
+                return False
+            #if 
+                
 
+        else:
+            janelaAuth=JanelaDeAutenticacao(janela)
+            janelaAuth.Show()
+            janelaAuth.Center()
+    #---------------------------------------------------------------------------------------------------------------------
     def OnRemoverFilmes(self,evento):
-        return
+        if self.AdminLogged:
+            self.TituloStr = str(self.Titulo.GetValue())
+            self.CodigoStr = str(self.Codigo.GetValue())
+            if self.TituloStr == self.CodigoStr or self.TituloStr=='':
+                wx.MessageBox('Dados nao preenchidos corretamente', 'Info',wx.OK|wx.ICON_EXCLAMATION)
+                return False
+            '''
+                Aqui vai o codigo para Remover o Cliente
+            '''
 
+        else:
+            janelaAuth=JanelaDeAutenticacao(janela)
+            janelaAuth.Show()
+            janelaAuth.Center()
+    #---------------------------------------------------------------------------------------------------------------------
     def OnMostrarFilmes(self, evento):
         self.ResultadoMovie.DeleteAllItems()
         try:
@@ -258,7 +293,7 @@ class JanelaPrincipal(wx.Frame):
                 
         except:
             wx.MessageBox('Erro ao tentar completar a busca por Filmes no Banco de Dados', 'Erro', wx.OK | wx.ICON_ERROR)
-
+    #---------------------------------------------------------------------------------------------------------------------
     def OnMostrarClientes(self, evento):
         # Basicamente vai chamar o Procurar Cliente e mostrar na tela, loja.ProcurarCliente(nomeCliente, CPF)
         self.NomeStr = str(self.NomeCliente.GetValue())
@@ -266,14 +301,19 @@ class JanelaPrincipal(wx.Frame):
         self.ResultadoCliente.DeleteAllItems()
         self.index=0
         try:
-            self.listaDeClientes = loja.procurarCliente(self.NomeClienteStr, self.cpfClienteStr)
-            wx.MessageBox('tudo ok')
-            
+            self.listaDeClientes = loja.procurarCliente(self.NomeStr, self.CPF)
+            for x in range(0,len(self.listaDeClientes)):
+                self.ResultadoCliente.InsertStringItem(self.index,self.listaDeClientes[x].nome)
+                self.ResultadoCliente.SetStringItem(self.index,1,self.listaDeClientes[x].cpf)
+                self.ResultadoCliente.SetStringItem(self.index,2,str(self.listaDeClientes[x].situacao))
+                self.index+=1
+                
         except:
-            wx.MessageBox('Erro ao visualizar os Clientes','Error[258]',wx.OK|wx.ICON_ERROR)
-
+            wx.MessageBox('Erro ao visualizar os Clientes','Error[300]',wx.OK|wx.ICON_ERROR)
+#####################################################################################################################################
 class JanelaDeAutenticacao(wx.Frame):
     ErrorCount = 0
+    #---------------------------------------------------------------------------------------------------------------------
     def __init__(self,parent):
         wx.Frame.__init__(self,parent,wx.ID_ANY,title="AutoRENT DVD Auth",size=(200,80),
                           style=wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX | wx.CLIP_CHILDREN )
@@ -282,7 +322,7 @@ class JanelaDeAutenticacao(wx.Frame):
         self.Pass=wx.TextCtrl(self.Painel,ID_PASS,'',(90,17),(80,-1),style=wx.TE_PROCESS_ENTER| wx.TE_PASSWORD)
 
         self.Bind(wx.EVT_TEXT_ENTER, self.OnEnter, id=ID_PASS)        
-
+    #---------------------------------------------------------------------------------------------------------------------
     def OnEnter(self,evento):
         self.PassStr = str(self.Pass.GetValue())
         if self.PassStr == janela.AdminPass:
@@ -301,7 +341,7 @@ class JanelaDeAutenticacao(wx.Frame):
                 return
             wx.MessageBox('Senha incorreta!','Auth Error',wx.OK | wx.ICON_ERROR)
             self.Pass.Clear()
-        
+########################################################################################################################################
 if __name__ == '__main__':
     app = wx.App()
     loja = loja()
