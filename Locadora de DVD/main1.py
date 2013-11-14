@@ -15,13 +15,32 @@ import shelve
 from cliente import cliente
 from produto import produto
 from datetime import date
-from carrinho import carrinho
 
 class loja:
     listaDeFilmes=[]
     lista=[]
     listaDeClientes=[]
     # -------------------------------------- FUNCOES PRIVADAS --------------------------------------
+    def __removerCliente(self,nome, cpf):
+        if nome =='' or cpf == '':
+            wx.MessageBox("Nome e/ou CPF nao especificados","Error",wx.OK|wx.ICON_ERROR)
+            return False
+        clientes = shelve.open("clientes")
+        if clientes.has_key(nome.upper()):
+            if clientes[nome.upper()].cpf == cpf:
+                if clientes[nome.upper()].situacao == "OK":
+                    del clientes[nome.upper()]
+                    clientes.close()
+                    wx.MessageBox("Cliente removido.","Info",wx.OK|wx.ICON_INFORMATION)
+                else:
+                    clientes.close()
+                    return "Cliente em debito", False
+            else:
+                return "CPF especificado nao permitido",False
+        else:
+            clientes.close()
+            return "Cliente nao encontrado!", False
+            
     def __procurarClienteAll(self,nomeCliente,cpfCliente):
         clientes=shelve.open('clientes')
         if clientes.has_key(nomeCliente.upper()):
@@ -36,7 +55,7 @@ class loja:
                         self.listaDeClientes.append(clientes[x])
                         clientes.close()
                         return self.listaDeClientes
-        if len(listaDeClientes)==0:
+        elif len(listaDeClientes)==0:
             wx.MessageBox('Cliente nao Encontrado','Info',wx.OK|wx.ICON_INFORMATION)
             clientes.close()
             return self.listaDeClientes
@@ -90,30 +109,32 @@ class loja:
                 
 
     #Função Privada para cadastrar lotes de filmes
-    def __cadastrarFilmes(self,nomeFilme=None,codigo=None,qtd=None,Midia=None):
+    def __cadastrarFilmes(self,nomeFilme=None,codigo=None,qtd=None,Midia=None,categoria=None):
         filmes = shelve.open("filmes", writeback=True)
         if filmes.has_key(nomeFilme)==True and filmes[nomeFilme].codigo==codigo:
             filmes.close()
             wx.MessageBox("Filme já cadastrado no Banco de Dados",'Info',wx.OK|wx.ICON_INFORMATION)
             return False
         else:
-            dataHj = date.today()
-            f=produto(nomeFilme,codigo,qtd,dataHj,Midia)
-            filmes[nomeFilme]=f
+            try:
+                f=produto(nomeFilme,codigo,qtd,Midia,categoria)
+            except:
+                wx.MessageBox('Erro ao instanciar o Produto')
+            filmes[f.titulo]=f
             filmes.close()      
-            return True
+            
 
     #Função Privada para cadastrar Clientes
-    def __cadastrarClientes(self, nome = None, CPF = None):
+    def __cadastrarClientes(self, nome = None, CPF = None, Tel=None):
         clientes = shelve.open("clientes", writeback = True)
-        if nome == None or CPF == None:
+        if nome == None or CPF == None or Tel==None:
             clientes.close()
             return False
         if clientes.has_key(nome) == True and clientes[nome].cpf == CPF:
             wx.MessageBos('Cliente ja cadastrado','Info',wx.OK|wx.ICON_INFORMATION)
             return False
         else:
-            c = cliente(nome, CPF)
+            c = cliente(nome, CPF, Tel)
             clientes[c.nomeid] = c
             clientes.close()
             return "Cliente cadastrado com exito", True
@@ -198,41 +219,193 @@ class loja:
                 wx.MessageBox('Error ao procurar Cliente por CPF',"Error",wx.OK|wx.ICON_ERROR)
             
             
-    def cadastroCliente(self, nome = None, cpf = None):
+    def cadastroCliente(self, nome = None, cpf = None, Tel=None):
         try:
-            self.__cadastrarClientes(nome, cpf)
+            self.__cadastrarClientes(nome, cpf, Tel)
         except:
             return "Erro ao tentar cadastrar o Cliente", False
 
-    def cadastroFilme(self, nome, codigo, quantidade, midia):
+    def cadastroFilme(self, nome, codigo, quantidade, midia,categoria):
         try:
-            self.__cadastrarFilmes(nome,codigo,quantidade,midia)
+            self.__cadastrarFilmes(nome,codigo,quantidade,midia,categoria)
         except:
             return False
 
     def procurarFilme(self,titulo,codigo, categoria,midia): 
         if len(self.listaDeFilmes)>0:
-            for x in self.listaDeFilmes:
-                self.listaDeFilmes.remove(x)
+           self.listaDeFilmes=[]
         if len(self.lista)>0:
-           for x in self.lista:
-               self.lista.remove(x)
+            self.lista=[]
         try:
             self.lista = self.__procurarFilme(titulo,codigo,categoria,midia)
             return self.lista
         except:
             wx.MessageBox('Erro ao procurar Filme','Error',wx.OK|wx.ICON_INFORMATION)
             return False
+
+    def removerCliente(self,nomeCliente,cpf):
+        try:
+            self.__removerCliente(nomeCliente,cpf)
+        except:
+            wx.MessageBox('Erro ao remover o Cliente','Error',wx.OK|wx.ICON_ERROR)
             
-    def alugar(self,filmes=None):
-        if filmes==None:
-           if len(carrinho.carrinhoDeCompras)!=0:
-               filmes=carrinho.carrinhoDeCompras
-               clientes = shelve.open("clientes.txt", writeback=True)
-               dataHj = datetime.today()
-
-           else:
-                return "Carrinho de Compras Vazio![Erro 1]", False
 
 
+    def reserva(CarrinhodeCompras = None, nomeCliente = None, cpfCliente = None, diasparaalugar = None):
+        if CarrinhodeCompras == None:
+            return "Erro! Produtos não especificados",False
+        if len(CarrinhodeCompras) == 0:
+            return "Erro! Nenhum produto selecionado",False
+        if len(CarrinhodeCompras) > 4:
+            return "Erro! Só podem ser reservados ate quatro filmes",False
+        #Verifica se o usuario preencheu a forma de pagamento
+        filmes = shelve.open("filmes")
+        clientes = shelve.open("clientes") #Clientes eh o ARQUIVO
+
+        for c in clientes:
+            if clientes[c].nome == nomeCliente:
+                if cpfCliente != None and clientes[c].cpf == cpfCliente:
+                    c = clientes[c]
+                    break
+                else:
+                    return "Erro! CPF nao especificado ou congruencia entre CPF/Nome nao encontrada.", False
+
+        valor = conta(CarrinhodeCompras = None)
+        if len(CarrinhodeCompras)>0:
+            today = date.today()
+            dataAluguel = date.fromordinal(date.toordinal(today)+diasparaalugar) #Data na qual o DVD esta sendo alugado
+            diaAluguel = dataDevolucao.weekday()
+
+            if diaAluguel == 6:
+                dataAluguel = date.fromordinal(date.toordinal(dataDevolucao)+1)
+                
+            for nomefilme in CarrinhodeCompras:
+                if filmes[nomeFilme].qtd != 0:
+                    filmes[nomeFilme].qtd-=1
+                    files[nomeFilme].reservados += 1
+                    c.filmesReservados[nomeFilme] = {filmeReservar.titulo:filmeResevar, "DataAluguel": "%d-%d-%d" %(dataAluguel.date,dataAluguel.month,dataAluguel.year), "Situação":"Pendente, devendo R$%.2f" %(valor)}
+                    c.debito += valor
+            return "Reserva efetuada com exito. Valor a ser pago: ", valor, True         
+                
+        else:
+            return "Nenhum Filme selecionado esta disponível para reserva!", False
+        
+        
+
+    def aluguelreserv(nomeCliente = None, cpfCliente = None):
+        clientes = shelve.open("clientes.pyc") #Clientes eh o ARQUIVO
+
+        for c in clientes:
+            if clientes[c].nome == nomeCliente:
+                if cpfCliente != None and clientes[c].cpf == cpfCliente:
+                    c = clientes[c]
+                    break
+                else:
+                    return "Erro! CPF nao especificado ou congruencia entre CPF/Nome nao encontrada.", False
+
+
+        if c.filmesReservados[nomeFilme]["DataAluguel"] == date.today():
+            for nomeFilme in c.filmesReservados:
+                dataDevolucao = date.fromordinal(date.toordinal(dataAluguel)+len(c.filmesReservados)) #Data na qual o DVD esta sendo alugado baseado na quantidade de filmes reservados
+               
+                if diaDevolucao == 6:
+                    dataDevolucao = date.fromordinal(date.toordinal(dataDevolucao)+1)
+                    
+                c.filmesAlugados[nomeFilme] = c.filmesReservados[nomeFilme]
+                c.filmesAlugados[nomeFilme]["DataDevolucao"] = "%d-%d-%d" %(dataDevolucao.date,dataDevolucao.month,dataDevolucao.year)           
+            c.filmesReservados = {}
+            return "Aluguel efetuado com exito", valor, True 
+        else:
+            return "Filme reservado para o dia: ",c.filmesReservados[nomeFilme]["DataAluguel"], False
+       
+    def aluguel(self,CarrinhodeCompras = None, nomeCliente = None, cpfCliente = None):
+        if CarrinhodeCompras == None:
+            return "Erro! Produtos não especificados",False
+        if len(CarrinhodeCompras) == 0:
+            wx.MessageBox("Erro! Nenhum produto selecionado")
+        #Verifica se o usuario preencheu a forma de pagamento
+        
+        filmes = shelve.open("filmes")
+        clientes = shelve.open("clientes") #Clientes eh o ARQUIVO
+
+        if clientes.has_key(nomeCliente.upper()):
+            if cpfCliente != None and clientes[c].cpf == cpfCliente:
+                c = clientes[c]
+            else:
+                wx.MessageBox("Erro! CPF nao especificado ou congruencia entre CPF/Nome nao encontrada.")
+                return
+        valor = self.TotalPagar(CarrinhodeCompras)
+        if len(CarrinhodeCompras)>0:
+            dataAluguel = date.today()
+            dataDevolucao = date.fromordinal(date.toordinal(dataAluguel)+len(CarrinhodeCompras)) #Data na qual o DVD esta sendo alugado
+            diaDevolucao = dataDevolucao.weekday()
+
+            if diaDevolucao == 6:
+                dataDevolucao = date.fromordinal(date.toordinal(dataDevolucao)+1)
+                
+            for prod in CarrinhodeCompras:
+                if filmes[prod.titulo].qtd != 0:
+                    filmes[prod.titulo].quantidade-=1
+                    filmeAlugar = filmes[prod.titulo]
+                    del filmeAlugar.quantidade
+                    filmeAlugar.dataAluguel="%d-%d-%d" %(dataAluguel.day,dataAluguel.month,dataAluguel.year)
+                    filmeAlugar.dataDevolucao="%d-%d-%d" %(dataDevolucao.day,dataDevolucao.month,dataDevolucao.year)
+                    c.filmesAlugados[filmeAlugar.titulo] = filmeAlugar
+                    c.situacao = "DEBITO"
+                    c.debito += valor
+            wx.MessageBox("Aluguel efetuado com exito. Valor a ser pago: %.2f" %(valor))         
+                
+        else:
+            wx.MessageBox("Nenhum Filme selecionado esta disponível no estoque!")
+
+    def TotalPagar(self,Carrinho):
+        valor = 0
+        for prod in range(0,len(Carrinho)):
+            valor += Carrinho[prod].valor
+        return valor
+    
+    def pagamento(valor = None, nomeCliente = None, cpfCliente = None):
+        if valor == None:
+            return "Falha no processamento do débito",False
+        if nomeCliente == None or cpfCliente == None:
+            return "Cliente ou CPF não especificado(s)",False
+        
+        clientes = shelve.open("clientes.pyc") 
+
+        for c in clientes:
+            if clientes[c].nome == nomeCliente:
+                if cpfCliente != None and clientes[c].cpf == cpfCliente:
+                    c = clientes[c]
+                    break
+                else:
+                    return "Erro! CPF nao especificado ou congruencia entre CPF/Nome nao encontrada.", False
+
+        c.debito -= valor
+        if c.debito == 0:
+            c.situacao = True
+        return "Pagamento realizado com sucesso", True
+        
+
+    def devolucao(nomeCliente = None,cpfCliente = None, valor=None):
+        if nomeCliente == None or cpfCliente == None:
+            return "Cliente ou CPF não especificado(s)",False
+        
+        clientes = shelve.open("clientes.pyc") 
+
+        for c in clientes:
+            if clientes[c].nome == nomeCliente:
+                if cpfCliente != None and clientes[c].cpf == cpfCliente:
+                    c = clientes[c]
+                    break
+                else:
+                    return "Erro! CPF nao especificado ou congruencia entre CPF/Nome nao encontrada.", False
+
+        if c.debito != 0:
+            c.debito -= valor
+
+        if c.debito == 0:
+            c.situacao == True
+
+        c.filmesAlugados = {}
+        return "Operação concluída",True
 
